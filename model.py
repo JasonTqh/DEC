@@ -22,5 +22,5 @@ class AlexNet(tf.keras.Model):
         layers_end = layers_end if layers_end is not None else len(all_layers)
         self.model = tf.keras.Sequential(all_layers[:layers_end + 1])
 
-    def call(self, inputs):
-        return self.model(inputs)
+def call(self, inputs):
+    return self.model(inputs)
