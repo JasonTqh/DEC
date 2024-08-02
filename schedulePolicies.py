@@ -1,7 +1,7 @@
 import tensorflow as tf
 from model import AlexNet
 
-
+# loading dataset
 def preprocess_image(image, label):
     image = tf.image.resize(image, [227, 227])  # Resize to the input size of AlexNet
     image = tf.cast(image, tf.float32)
@@ -32,11 +32,13 @@ def train_and_evaluate(model, dataset, epochs=1):
     model.fit(dataset, epochs=epochs)
 
 
-max_layers = 14  # AlexNet has 14 layers in total
-dataset = make_dataset()  # Load dataset
 
 
 if __name__ == '__main__':
+
+    max_layers = 14  # AlexNet has 14 layers in total
+    dataset = make_dataset()  # Load dataset
+
     for d in range(max_layers + 1):
         for e in range(max_layers + 1):
             if d <= e:  # To avoid duplicate models and ensure m <= e
