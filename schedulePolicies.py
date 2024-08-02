@@ -1,5 +1,9 @@
 import tensorflow as tf
+import pynvml
+import psutil
+
 from model import AlexNet
+
 
 # loading dataset
 def preprocess_image(image, label):
@@ -7,6 +11,7 @@ def preprocess_image(image, label):
     image = tf.cast(image, tf.float32)
     image /= 255.0  # Normalize to [0, 1]
     return image, label
+
 
 def make_dataset():
     # Load the CIFAR-10 dataset
@@ -16,8 +21,8 @@ def make_dataset():
     return train_dataset
 
 
-def train_model_stop(model, dataset, stop_layer):
-    for x, y in dataset:
+def train_model_stop(model, data_set, stop_layer):
+    for x, y in data_set:
         with tf.GradientTape() as tape:
             predictions = model(x, training=True)
             loss = tf.keras.losses.sparse_categorical_crossentropy(y, predictions)
@@ -27,17 +32,45 @@ def train_model_stop(model, dataset, stop_layer):
         gradients = tape.gradient(loss, trainable_vars)
         model.optimizer.apply_gradients(zip(gradients, trainable_vars))
 
-def train_and_evaluate(model, dataset, epochs=1):
+
+def train_and_evaluate(model, data_set, epochs=1):
     model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    model.fit(dataset, epochs=epochs)
+    model.fit(data_set, epochs=epochs)
 
 
+# Get the performance of the current device
+def get_device_performance():
+    # Get the number of gpu of the current device
+    pynvml.nvmlInit()
+    gpu_count = pynvml.nvmlDeviceGetCount()
+    print("GPU count:", gpu_count)
+    pynvml.nvmlShutdown()
+    # Get the RAM size of the current device
+    ram_info = psutil.virtual_memory()
+    ram = ram_info.total / (1024 ** 3)
+    print("RAM: ", ram, "GB")
+
+    score = 0.7 * gpu_count + 0.3 * ram
+    return score
+
+
+# data-parallel
+def data_parallel(data_set, total_number_device, m):
+    score_device = []
+    total_score_device = 0
+    number_sample_device = []
+    for i in m:
+        score_device[i] = get_device_performance()
+        total_score_device += score_device[i]
+    for i in m:
+        number_sample_device[i] = (score_device[i] / total_score_device)*total_number_device
+    return number_sample_device
 
 
 if __name__ == '__main__':
-
     max_layers = 14  # AlexNet has 14 layers in total
     dataset = make_dataset()  # Load dataset
+    total_number_sample = len(dataset)
 
     for d in range(max_layers + 1):
         for e in range(max_layers + 1):
