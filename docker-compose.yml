@@ -1,0 +1,89 @@
+services:
+  cloud_server:
+    image: eec
+    container_name: cloud-server
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 6G
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: 1
+#              capabilities: [gpu]
+#    environment:
+#      - NVIDIA_VISIBLE_DEVICES=all
+    networks:
+      eec_net:
+        ipv4_address: 172.18.0.2
+    ports:
+      - "8080:8080"
+    command: ["python","schedulePolicies.py",'nvidia-smi']
+
+  edge_server:
+    image: eec
+    container_name: edge-server
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 4G
+    networks:
+      eec_net:
+        ipv4_address: 172.18.0.3
+    ports:
+      - "8081:8081"
+    command: ["python","edge_server.py"]
+
+  edge_device_1:
+    image: eec
+    container_name: edge-device-1
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 3G
+    networks:
+      eec_net:
+        ipv4_address: 172.18.0.10
+    ports:
+      - "9090:9090"
+    command: ["python","edge_device_1.py"]
+
+  edge_device_2:
+    image: eec
+    container_name: edge-device-2
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 3G
+    networks:
+      eec_net:
+        ipv4_address: 172.18.0.11
+    ports:
+      - "9091:9091"
+    command: ["python","edge_device_2.py"]
+
+  edge_device_3:
+    image: eec
+    container_name: edge-device-3
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 3G
+    networks:
+      eec_net:
+        ipv4_address: 172.18.0.12
+    ports:
+      - "9092:9092"
+    command: ["python","edge_device_3.py"]
+
+networks:
+  eec_net:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.18.0.0/16

@@ -1,10 +1,11 @@
+
+import time as tm
 import pickle
+
 import numpy as np
 import tensorflow as tf
-import pynvml
 import psutil
 import socket
-import time as tm
 from model import AlexNet
 import os
 
@@ -44,7 +45,6 @@ def preprocess_image(image, label):
 #     if not single_sample:
 #         train_dataset = train_dataset.batch(128).shuffle(1000)
 #     return train_dataset
-# /app/data/cifar-10-batches-py/
 def make_dataset(single_sample=False, data_dir="cifar-10-batches-py/"):
     train_images, train_labels = load_cifar10_data(data_dir)
     train_dataset = tf.data.Dataset.from_tensor_slices((train_images, train_labels))
@@ -52,7 +52,6 @@ def make_dataset(single_sample=False, data_dir="cifar-10-batches-py/"):
     if not single_sample:
         train_dataset = train_dataset.batch(128).shuffle(1000)
     return train_dataset
-
 
 
 
@@ -101,51 +100,24 @@ def get_device_performance():
 
     # Get the number of cpu of the current device
     # cpu_count = psutil.cpu_count(logical=True)
-    cpu_count = 8
+    cpu_count = 2
     print("logical CPUs count:", cpu_count)
     # Get the RAM size of the current device
     # ram_info = psutil.virtual_memory()
     # ram = ram_info.total / (1024 ** 3)
-    ram = 4
+    ram = 3
     print("RAM: ", ram, "GB")
+    score = 0.7 * cpu_count + 0.3 * ram
+    return score
 
-
-def send_edge_server_info(data, host, port):
+def send_edge_device_info(data, score, device,host, port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((host, port))
-        data = pickle.dumps((data))
+        data = pickle.dumps((data, score, device))
         print(data)
         s.sendall(data)
         s.close()
 def receive_cloud_info(host, port):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((host, port))
-        s.listen()
-        s.settimeout(180)
-
-        try:
-            conn, addr = s.accept()
-            with conn:
-                conn.settimeout(60)
-                data = b''
-                while True:
-                    try:
-                        packet = conn.recv(4096)
-                        if not packet:
-                            break
-                        data += packet
-                    except socket.timeout:
-                        print("Connection timed out while receiving data")
-                        break
-                if data:
-                    params = pickle.loads(data)
-                    return params
-        except socket.timeout:
-            print("No connection was made within the timeout period.")
-        except Exception as e:
-            print(f"An error occurred: {e}")
-    return None
-def receive_device_info(host, port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((host, port))
         s.listen()
@@ -202,7 +174,7 @@ def receive_number_sample(host, port):
 def send_edge_device_parameters(parameters, host, port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((host, port))
-        s.sendall(parameters)
+        s.sendall(parameters, score)
 
 # training process
 # data-parallel
@@ -220,9 +192,8 @@ def train_and_evaluate(model, data_set, epochs=1):
     model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     model.fit(data_set, epochs=epochs)
 
+
 if __name__ == "__main__":
-    # host = ['172.18.0.10', '172.18.0.11', '172.18.0.12']
-    # port = [9090, 9091, 9092]
     max_layers = 14
     # cloud_info = receive_cloud_info('172.18.0.2', 8080 )
     # layers = cloud_info
@@ -231,22 +202,15 @@ if __name__ == "__main__":
     single_sample_data_set = make_dataset(single_sample=True)
     data_set = make_dataset()
     print("Dataset loaded.")
+
     train_times = get_time(model, single_sample_data_set)
-    print(train_times)
-    # score = get_device_performance()
-    send_edge_server_info(train_times, '172.18.0.2', 8080)
-    # number_sample_start, number_sample_end = receive_number_sample('172.18.0.2', 8080)
-    # md = receive_cloud_info('172.18.0.2', 8080)
-    # data_set_edge = data_set.skip(number_sample_start).take(number_sample_start, number_sample_end)
-    # train_model_stop(model, data_set_edge, md)
-    # weights = model.get_weights()
-    # weights_d=[]
-    # weights_d[0] = receive_device_info(host[0], port[0])
-    # weights_d[1] = receive_device_info(host[1], port[1])
-    # weights_d[2] = receive_device_info(host[2], port[2])
-    # for i in range(md):
-    #     weights[i] = (weights_d[0][i] + weights_d[1][i]+weights_d[2][i]) / 3  # 简单平均聚合
-    # model.set_weights(weights)
-    # train_model_stop(model, data_set_edge, layers)
+    score = get_device_performance()
+    send_edge_device_info(train_times, score, 1, '172.18.0.2', 8080)
+
+    print('训练时间和性能得分发送成功')
+    number_sample_start, number_sample_end = receive_number_sample('172.18.0.11', 9091)
+    # data_set_device = data_set.skip(number_sample_start).take(number_sample_start, number_sample_end)
+    # train_and_evaluate(model, data_set_device)
     # weights = model.get_weights()
     # send_edge_device_parameters(weights, '172.18.0.2', 8080)
+

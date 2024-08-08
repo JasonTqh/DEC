@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 class AlexNet(tf.keras.Model):
-    def __init__(self,layers_end=None):
+    def __init__(self, layers_end=None):
         super(AlexNet, self).__init__()
         all_layers = [
             tf.keras.layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation='relu'),
@@ -17,10 +17,12 @@ class AlexNet(tf.keras.Model):
             tf.keras.layers.Dropout(0.5),
             tf.keras.layers.Dense(4096, activation='relu'),
             tf.keras.layers.Dropout(0.5),
-            tf.keras.layers.Dense(1000, activation='softmax')
+            tf.keras.layers.Dense(10, activation='softmax')
         ]
         layers_end = layers_end if layers_end is not None else len(all_layers)
         self.model = tf.keras.Sequential(all_layers[:layers_end + 1])
+        self.optimizer = tf.keras.optimizers.Adam()
 
-def call(self, inputs):
-    return self.model(inputs)
+    def call(self, inputs):
+        return self.model(inputs)
+
