@@ -16,7 +16,7 @@ def figure_Me( time_me):
     ax.set_ylabel("Training time")
     ax.plot(df.index, df[0], label='Me', color='blue', linestyle='--')
     plt.show()
-def figure_hiertrain_eec_FEEL(time_for_figure_hiertrain, time_for_figure_eec, time_for_figure_FEEL, bandwidth):
+def figure_hiertrain_eec_FEEL(time_for_figure_hiertrain,time_for_figure_eec, time_for_figure_FEEL, bandwidth):
     df = pd.DataFrame(time_for_figure_hiertrain)
     df.insert(1, 1, time_for_figure_eec)
     df.insert(2, 2, time_for_figure_FEEL)

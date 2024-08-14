@@ -54,7 +54,27 @@ def make_dataset(single_sample=False, data_dir="cifar-10-batches-py/"):
     return train_dataset
 
 
+def calculate_averages(data):
+    # 初始化存储平均值的字典
+    averages = {'forward': [], 'backward': [], 'update': []}
 
+    # 获取列表长度
+    num_entries = len(data)
+
+    # 对每个键进行操作
+    for key in averages.keys():
+        # 获取每个位置的长度
+        length_of_lists = len(data[0][key])
+
+        # 遍历每个位置
+        for index in range(length_of_lists):
+            # 计算每个位置的平均值
+            sum_at_index = sum(d[key][index] for d in data if index < len(d[key]))
+            count_at_index = sum(1 for d in data if index < len(d[key]) and d[key][index] is not None)
+            average_at_index = sum_at_index / count_at_index if count_at_index > 0 else 0
+            averages[key].append(average_at_index)
+
+    return averages
 def get_time(alexNet, data_set):
     iterator = iter(data_set)
     image, label = next(iterator)
@@ -100,12 +120,12 @@ def get_device_performance():
 
     # Get the number of cpu of the current device
     # cpu_count = psutil.cpu_count(logical=True)
-    cpu_count = 2
+    cpu_count = 3
     print("logical CPUs count:", cpu_count)
     # Get the RAM size of the current device
     # ram_info = psutil.virtual_memory()
     # ram = ram_info.total / (1024 ** 3)
-    ram = 3
+    ram = 2
     print("RAM: ", ram, "GB")
     score = 0.7 * cpu_count + 0.3 * ram
     return score
@@ -202,13 +222,16 @@ if __name__ == "__main__":
     single_sample_data_set = make_dataset(single_sample=True)
     data_set = make_dataset()
     print("Dataset loaded.")
-
-    train_times = get_time(model, single_sample_data_set)
+    train_times_list = []
+    for i in range(50):
+        train_times_list.append(get_time(model, single_sample_data_set))
+    train_times = calculate_averages(train_times_list)
     score = get_device_performance()
-    send_edge_device_info(train_times, score, 1, '172.18.0.2', 8080)
-
-    print('训练时间和性能得分发送成功')
-    number_sample_start, number_sample_end = receive_number_sample('172.18.0.11', 9091)
+    print(train_times, score)
+    # send_edge_device_info(train_times, score, 1, '172.18.0.2', 8080)
+    #
+    # print('训练时间和性能得分发送成功')
+    # number_sample_start, number_sample_end = receive_number_sample('172.18.0.11', 9091)
     # data_set_device = data_set.skip(number_sample_start).take(number_sample_start, number_sample_end)
     # train_and_evaluate(model, data_set_device)
     # weights = model.get_weights()

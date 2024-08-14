@@ -55,7 +55,27 @@ def make_dataset(single_sample=False, data_dir="cifar-10-batches-py/"):
 
 
 
+def calculate_averages(data):
+    # 初始化存储平均值的字典
+    averages = {'forward': [], 'backward': [], 'update': []}
 
+    # 获取列表长度
+    num_entries = len(data)
+
+    # 对每个键进行操作
+    for key in averages.keys():
+        # 获取每个位置的长度
+        length_of_lists = len(data[0][key])
+
+        # 遍历每个位置
+        for index in range(length_of_lists):
+            # 计算每个位置的平均值
+            sum_at_index = sum(d[key][index] for d in data if index < len(d[key]))
+            count_at_index = sum(1 for d in data if index < len(d[key]) and d[key][index] is not None)
+            average_at_index = sum_at_index / count_at_index if count_at_index > 0 else 0
+            averages[key].append(average_at_index)
+
+    return averages
 def get_time(alexNet, data_set):
     iterator = iter(data_set)
     image, label = next(iterator)
@@ -92,22 +112,22 @@ def get_time(alexNet, data_set):
 
     return training_times
 # Get the performance of the current device
-def get_device_performance():
-    # Get the number of gpu of the current device
-    # pynvml.nvmlInit()
-    # gpu_count = pynvml.nvmlDeviceGetCount()
-    # print("GPU count:", gpu_count)
-    # pynvml.nvmlShutdown()
-
-    # Get the number of cpu of the current device
-    # cpu_count = psutil.cpu_count(logical=True)
-    cpu_count = 8
-    print("logical CPUs count:", cpu_count)
-    # Get the RAM size of the current device
-    # ram_info = psutil.virtual_memory()
-    # ram = ram_info.total / (1024 ** 3)
-    ram = 4
-    print("RAM: ", ram, "GB")
+# def get_device_performance():
+#     # Get the number of gpu of the current device
+#     # pynvml.nvmlInit()
+#     # gpu_count = pynvml.nvmlDeviceGetCount()
+#     # print("GPU count:", gpu_count)
+#     # pynvml.nvmlShutdown()
+#
+#     # Get the number of cpu of the current device
+#     # cpu_count = psutil.cpu_count(logical=True)
+#     cpu_count = 8
+#     print("logical CPUs count:", cpu_count)
+#     # Get the RAM size of the current device
+#     # ram_info = psutil.virtual_memory()
+#     # ram = ram_info.total / (1024 ** 3)
+#     ram = 4
+#     print("RAM: ", ram, "GB")
 
 
 def send_edge_server_info(data, host, port):
@@ -231,10 +251,13 @@ if __name__ == "__main__":
     single_sample_data_set = make_dataset(single_sample=True)
     data_set = make_dataset()
     print("Dataset loaded.")
-    train_times = get_time(model, single_sample_data_set)
+    train_times_list = []
+    for i in range(50):
+        train_times_list.append(get_time(model, single_sample_data_set))
+    train_times = calculate_averages(train_times_list)
     print(train_times)
     # score = get_device_performance()
-    send_edge_server_info(train_times, '172.18.0.2', 8080)
+    # send_edge_server_info(train_times, '172.18.0.2', 8080)
     # number_sample_start, number_sample_end = receive_number_sample('172.18.0.2', 8080)
     # md = receive_cloud_info('172.18.0.2', 8080)
     # data_set_edge = data_set.skip(number_sample_start).take(number_sample_start, number_sample_end)
