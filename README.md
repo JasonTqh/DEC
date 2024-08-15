@@ -1,2 +1,2 @@
-# EEC
-A distributed DNN training framework on End-Edge-Cloud
+# DEC
+A distributed DNN training framework on Device-Edge-Cloud
