@@ -1,43 +1,43 @@
 services:
   cloud_server:
-    image: eec
+    image: dec
     container_name: cloud-server
-#    deploy:
-#      resources:
-##        limits:
-##          cpus: '36'
-##          memory: 12G
-##        reservations:
-##          devices:
-##            - driver: nvidia
-##              count: 1
-##              capabilities: [gpu]
-##    environment:
-##      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+#        limits:
+#          cpus: '36'
+#          memory: 12G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
     networks:
-      eec_net:
+      dec_net:
         ipv4_address: 172.18.0.2
     ports:
       - "8080:8080"
-    command: ["python","schedulePolicies.py",'nvidia-smi']
+    command: ["python","schedulePolicies.py",]
 
   edge_server:
-    image: eec
+    image: dec
     container_name: edge-server
     deploy:
       resources:
         limits:
-          cpus: '6'
+          cpus: '8'
           memory: 8G
     networks:
-      eec_net:
+      dec_net:
         ipv4_address: 172.18.0.3
     ports:
       - "8081:8081"
     command: ["python","edge_server.py"]
 
   edge_device_1:
-    image: eec
+    image: dec
     container_name: edge-device-1
     deploy:
       resources:
@@ -45,14 +45,14 @@ services:
           cpus: '4'
           memory: 2G
     networks:
-      eec_net:
+      dec_net:
         ipv4_address: 172.18.0.10
     ports:
       - "9090:9090"
     command: ["python","edge_device_1.py"]
 
   edge_device_2:
-    image: eec
+    image: dec
     container_name: edge-device-2
     deploy:
       resources:
@@ -60,14 +60,14 @@ services:
           cpus: '3'
           memory: 2G
     networks:
-      eec_net:
+      dec_net:
         ipv4_address: 172.18.0.11
     ports:
       - "9091:9091"
     command: ["python","edge_device_2.py"]
 
   edge_device_3:
-    image: eec
+    image: dec
     container_name: edge-device-3
     deploy:
       resources:
@@ -75,14 +75,14 @@ services:
           cpus: '2'
           memory: 2G
     networks:
-      eec_net:
+      dec_net:
         ipv4_address: 172.18.0.12
     ports:
       - "9092:9092"
     command: ["python","edge_device_3.py"]
 
 networks:
-  eec_net:
+  dec_net:
     driver: bridge
     ipam:
      config:
