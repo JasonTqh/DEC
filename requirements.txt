@@ -1,0 +1,5 @@
+tensorflow==2.10.0
+pandas==2.2.2
+matplotlib==3.9.2
+numpy==1.26.4
+pulp==2.9.0
